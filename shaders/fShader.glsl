@@ -8,6 +8,9 @@ uniform float time;
 out vec4 FragColor;
 
 vec3 screenCentre = vec3(screenDimensions/2, 0);
+float radius = min(screenDimensions.x, screenDimensions.y) * 0.25;
+
+float pixelSize = 5;
 
 vec3 applyLight(vec3 color, vec3 point, vec3 lightPos, vec3 viewerPos) {
   vec3 norm = normalize(point);
@@ -29,17 +32,27 @@ void main() {
   vec3 lightPos = vec3(800, 600, 500);
   vec3 viewerPos = vec3(screenCentre.xy, 400);
 
-  vec3 point = vec3(mix(vec2(0, 0), screenDimensions, gl_FragCoord.xy / screenDimensions),0);
-  // Center the point around (screenDimensions.x / 2, screenDimensions.y / 2)
-  vec3 centeredPoint = vec3(point.xy - 0.5 * screenDimensions, 0);
-  float radius = min(screenDimensions.x, screenDimensions.y) * 0.25;
+  vec3 colDivideVector = vec3(1.0, 0.0, 0.0);
+  float angle = time;
+  mat3 yRotation = mat3(
+    cos(angle),  0.0, sin(angle),
+    0.0,       1.0, 0.0,
+    -sin(angle), 0.0, cos(angle)
+  );
+  colDivideVector = normalize(yRotation*colDivideVector);
+
+  vec2 pixelatedCoord = floor(gl_FragCoord.xy / pixelSize) * pixelSize;
+  vec3 point = vec3(mix(vec2(0, 0), screenDimensions, pixelatedCoord / screenDimensions), 0);
+  vec3 centeredPoint = point - screenCentre;
   vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
   
   float distanceFromCentre2 = dot(centeredPoint, centeredPoint);
   if (distanceFromCentre2 <= radius*radius) {
-    color.x = 1.0;
     float z = sqrt(radius*radius - distanceFromCentre2);
     centeredPoint.z = z;
+    if (dot(normalize(centeredPoint), colDivideVector) > 0) {
+      color.x = 1.0;
+    } else color.y = 1.0;
     color.xyz = applyLight(color.xyz, centeredPoint, lightPos, viewerPos);
   }
 
