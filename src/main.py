@@ -2,6 +2,7 @@ import sys
 import pygame
 import moderngl
 from array import array
+import random;
 
 from pygame.locals import QUIT, KEYDOWN
 from general.Settings import Settings
@@ -17,7 +18,10 @@ pygame.display.gl_set_attribute(pygame.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, True)
 SCREEN = pygame.display.set_mode((SETTINGS.screenWidth, SETTINGS.screenHeight), flags=pygame.OPENGL | pygame.DOUBLEBUF)
 display = pygame.Surface((SETTINGS.screenWidth, SETTINGS.screenHeight))
 pygame.display.set_caption("Test Game")
+
 CLOCK = pygame.time.Clock()
+
+FNT = pygame.font.SysFont('Arial', 36)
 
 ctx = moderngl.create_context()
 
@@ -38,6 +42,14 @@ shader = ctx.program(vertex_shader=vShader, fragment_shader=fShader)
 VAO = ctx.vertex_array(shader, [(VBO, '2f 2f', 'aPos', 'aTex')])
 
 shader['screenDimensions'] = [SETTINGS.screenWidth, SETTINGS.screenHeight]
+shader['noiseSeed'] = random.uniform(-2**15, 2**15);
+
+def surfToTexture(surf: pygame.Surface):
+  tex = ctx.texture(surf.get_size(), 4)
+  tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+  tex.swizzle = "BGRA"
+  tex.write(surf.get_view('1'))
+  return tex
 
 time = 0
 print("GAME LOOP STARTS")
@@ -45,15 +57,27 @@ while True:
   display.fill('Black')
   delta = CLOCK.tick(SETTINGS.fpsCap) / 1000
   time += delta
+
+  textSurface = FNT.render(f"fps: {int(CLOCK.get_fps())}", True, 'White')
+  display.blit(textSurface, (5, 5))
+
   for event in pygame.event.get():
     if event.type == QUIT or event.type == KEYDOWN and event.key == pygame.K_ESCAPE:
       print("GAME LOOP ENDS")
       pygame.quit()
       sys.exit()
+    if event.type == KEYDOWN and event.key == pygame.K_SPACE:
+      shader['noiseSeed'] = random.uniform(-2**15, 2**15);
   
+  tex = surfToTexture(display)
+  tex.use(0)
+
+
+  shader['backgroundTexture'] = 0
   shader['time'] = time
 
   VAO.render(mode=moderngl.TRIANGLE_STRIP)
 
   pygame.display.flip()
-  print(CLOCK.get_fps())
+
+  tex.release()
