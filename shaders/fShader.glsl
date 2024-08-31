@@ -7,13 +7,22 @@ uniform sampler2D backgroundTexture;
 uniform ivec2 screenDimensions;
 uniform float time;
 uniform float noiseSeed;
+uniform float planetSizeCoef;
+uniform float cloudSizeCoef;
+uniform float rotationSpeed;
+uniform float cloudRotationSpeed;
+uniform vec3 planetColorConstraints;
+uniform mat4x3 planetColors;
+uniform vec2 cloudColorConstraints;
+uniform mat2x3 cloudColors;
 
 out vec4 FragColor;
 
 vec3 screenCentre = vec3(screenDimensions/2, 0);
-float radius = min(screenDimensions.x, screenDimensions.y) * 0.25;
+float radius = min(screenDimensions.x, screenDimensions.y) * planetSizeCoef;
+float cloudRadius = radius*cloudSizeCoef;
 
-float pixelSize = 4;
+float PIXEL_SIZE = 4;
 
 //
 // GLSL textureless classic 4D noise "cnoise",
@@ -48,31 +57,33 @@ float cnoise(vec4 P);
 
 vec3 applyLight(vec3 color, vec3 point, vec3 lightPos, vec3 viewerPos);
 
+vec3 applyClouds(vec3 color, vec3 point, float time);
+
 mat3 zRotation(float angle) {
   return mat3(
-    cos(angle), -sin(angle), 0,
-    sin(angle), cos(angle), 0,
+    cos(angle), sin(angle), 0,
+    -sin(angle), cos(angle), 0,
     0, 0, 1
   );
 }
 
 mat3 yRotation(float angle) {
   return mat3(
-    cos(angle),  0.0, sin(angle),
+    cos(angle),  0.0, -sin(angle),
     0.0,       1.0, 0.0,
-    -sin(angle), 0.0, cos(angle)
+    sin(angle), 0.0, cos(angle)
   );
 }
 
 void main() {
   time;
-  vec3 lightPos = zRotation(-3.141/10)*vec3(radius*10*cos(time*0.5), 0, radius*10*sin(time*0.5));
+  vec3 lightPos = zRotation(3.141/9)*vec3(radius*10*cos(time*0.5), 0, radius*10*sin(time*0.5));
   vec3 viewerPos = vec3(0, 0, radius*3);
 
-  float planetAngle = time*0.1;
+  float planetAngle = time*rotationSpeed;
 
   // snap coord to grid to have pixel effect
-  vec2 pixelatedCoord = floor(gl_FragCoord.xy / pixelSize) * pixelSize;
+  vec2 pixelatedCoord = floor(gl_FragCoord.xy / PIXEL_SIZE) * PIXEL_SIZE;
     
   // pixelated
   vec3 point = vec3(mix(vec2(0, 0), screenDimensions, pixelatedCoord / screenDimensions), 0);
@@ -90,18 +101,28 @@ void main() {
     vec3 rotatedPoint = yRotation(planetAngle)*centeredPoint;
     float n = cnoise(vec4(rotatedPoint/radius*2, noiseSeed));
     n = 0.5 + 0.5*n;
-    if (n > 0.55) {
-      color.rgb = vec3(0.486, 0.988, 0.0);
-    } else if (n > 0.54) {
-      color.rgb = vec3(0.761, 0.698, 0.502);
-    } else if (n > 0.48) {
-      color.rgb = vec3(0.118, 0.565, 1.0);
+    if (n > planetColorConstraints[0]) {
+      color.rgb = planetColors[0];
+    } else if (n > planetColorConstraints[1]) {
+      color.rgb = planetColors[1];
+    } else if (n > planetColorConstraints[2]) {
+      color.rgb = planetColors[2];
     } else {
-      color.rgb = vec3(0.004, 0.227, 0.420);
+      color.rgb = planetColors[3];
     }
-
+  }
+  if (distanceFromCentre2 <= cloudRadius*cloudRadius) {
+    float z = sqrt(cloudRadius*cloudRadius - distanceFromCentre2);
+    centeredPoint.z = z;
+    vec3 rotatedPoint = yRotation(planetAngle*cloudRotationSpeed)*centeredPoint;
+    color.rgb = applyClouds(color.rgb, rotatedPoint, time*0.2);
+    if (distanceFromCentre2 > radius*radius) {
+      rotatedPoint = yRotation(planetAngle*cloudRotationSpeed)*vec3(centeredPoint.xy, -1*centeredPoint.z);
+      color.rgb = applyClouds(color.rgb, rotatedPoint, time*0.2);
+    }
     color.rgb = applyLight(color.rgb, centeredPoint, lightPos, viewerPos);
   }
+
   color += backgroundColor;
   FragColor = color;
 }
@@ -249,9 +270,21 @@ vec3 applyLight(vec3 color, vec3 point, vec3 lightPos, vec3 viewerPos) {
   vec3 halfway = normalize(dirToViewer+toLightVector);
   float spec = pow(max(dot(norm, halfway), 0.0), 32);
   
-  vec3 ambient = color*0.2;
+  vec3 ambient = color*0.1;
   vec3 diffuse = coef*color;
   //vec3 specular = color*spec;
 
   return ambient + diffuse; //+ specular;
+}
+
+vec3 applyClouds(vec3 color, vec3 point, float time) {
+  float n = cnoise(vec4(point/cloudRadius*4, time));
+  n = 0.5 + 0.5*n;
+
+  if (n > cloudColorConstraints[0]) {
+    return mix(color, cloudColors[0], 0.8);
+  } else if (n > cloudColorConstraints[1]) {
+    return mix(color, cloudColors[1], 0.6);
+  }
+  return color;
 }

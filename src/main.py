@@ -5,6 +5,7 @@ from array import array
 import random;
 
 from pygame.locals import QUIT, KEYDOWN
+from general.Planet import Planet
 from general.Settings import Settings
 
 SETTINGS = Settings()
@@ -50,6 +51,17 @@ def surfToTexture(surf: pygame.Surface):
   tex.swizzle = "BGRA"
   tex.write(surf.get_view('1'))
   return tex
+
+planet = Planet(0.25, 1.1, -0.2, 1.5,
+                [0.55, 0.54, 0.48],
+                [0.486, 0.988, 0.0,
+                 0.761, 0.698, 0.502,
+                 0.118, 0.565, 1.0,
+                 0.004, 0.227, 0.420],
+                 [0.7, 0.6],
+                 [1, 1, 1,
+                  1, 1, 1])
+planet.setUniforms(shader)
 
 time = 0
 print("GAME LOOP STARTS")
