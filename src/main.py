@@ -4,7 +4,7 @@ import moderngl
 from array import array
 import random;
 
-from pygame.locals import QUIT, KEYDOWN
+from pygame.locals import QUIT, KEYDOWN, MOUSEWHEEL, FINGERMOTION
 from general.Planet import Planet
 from general.Settings import Settings
 
@@ -52,7 +52,7 @@ def surfToTexture(surf: pygame.Surface):
   tex.write(surf.get_view('1'))
   return tex
 
-planet = Planet(0.25, 1.1, -0.2, 1.5,
+planet = Planet(0.3, 2, -0.2, 1.5,
                 [0.55, 0.54, 0.48],
                 [0.486, 0.988, 0.0,
                  0.761, 0.698, 0.502,
@@ -62,6 +62,8 @@ planet = Planet(0.25, 1.1, -0.2, 1.5,
                  [1, 1, 1,
                   1, 1, 1])
 planet.setUniforms(shader)
+
+uiScale = 1.0
 
 time = 0
 print("GAME LOOP STARTS")
@@ -80,6 +82,17 @@ while True:
       sys.exit()
     if event.type == KEYDOWN and event.key == pygame.K_SPACE:
       shader['noiseSeed'] = random.uniform(-2**15, 2**15);
+    if event.type == MOUSEWHEEL:
+      val = event.y/100
+      uiScale += val
+      uiScale = min(uiScale, 3)
+      uiScale = max(uiScale, 0.1)
+    if event.type == FINGERMOTION:
+      print(event.x)
+    if event.type == KEYDOWN and event.key == pygame.K_p:
+      uiScale = min(uiScale+0.1, 3)
+    if event.type == KEYDOWN and event.key == pygame.K_o:
+      uiScale = max(uiScale-0.1, 0.1)
   
   tex = surfToTexture(display)
   tex.use(0)
@@ -87,6 +100,7 @@ while True:
 
   shader['backgroundTexture'] = 0
   shader['time'] = time
+  shader['uiScale'] = uiScale
 
   VAO.render(mode=moderngl.TRIANGLE_STRIP)
 

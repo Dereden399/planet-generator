@@ -7,6 +7,8 @@ uniform sampler2D backgroundTexture;
 uniform ivec2 screenDimensions;
 uniform float time;
 uniform float noiseSeed;
+uniform float uiScale;
+
 uniform float planetSizeCoef;
 uniform float cloudSizeCoef;
 uniform float rotationSpeed;
@@ -19,8 +21,8 @@ uniform mat2x3 cloudColors;
 out vec4 FragColor;
 
 vec3 screenCentre = vec3(screenDimensions/2, 0);
-float radius = min(screenDimensions.x, screenDimensions.y) * planetSizeCoef;
-float cloudRadius = radius*cloudSizeCoef;
+float radius = min(screenDimensions.x, screenDimensions.y) * planetSizeCoef*uiScale;
+float cloudRadius = radius+10*cloudSizeCoef*uiScale;
 
 float PIXEL_SIZE = 4;
 
@@ -99,7 +101,7 @@ void main() {
     centeredPoint.z = z;
 
     vec3 rotatedPoint = yRotation(planetAngle)*centeredPoint;
-    float n = cnoise(vec4(rotatedPoint/radius*2, noiseSeed));
+    float n = cnoise(vec4(rotatedPoint/(radius)*2, noiseSeed));
     n = 0.5 + 0.5*n;
     if (n > planetColorConstraints[0]) {
       color.rgb = planetColors[0];
