@@ -129,6 +129,34 @@ void main() {
   FragColor = color;
 }
 
+vec3 applyLight(vec3 color, vec3 point, vec3 lightPos, vec3 viewerPos) {
+  vec3 norm = normalize(point);
+  vec3 toLightVector = normalize(lightPos-point);
+  float coef = max(0.0, dot(norm, toLightVector));
+
+  vec3 dirToViewer = normalize(viewerPos - point);
+  vec3 halfway = normalize(dirToViewer+toLightVector);
+  float spec = pow(max(dot(norm, halfway), 0.0), 32);
+  
+  vec3 ambient = color*0.1;
+  vec3 diffuse = coef*color;
+  //vec3 specular = color*spec;
+
+  return ambient + diffuse; //+ specular;
+}
+
+vec3 applyClouds(vec3 color, vec3 point, float time) {
+  float n = cnoise(vec4(point/cloudRadius*4, time));
+  n = 0.5 + 0.5*n;
+
+  if (n > cloudColorConstraints[0]) {
+    return mix(color, cloudColors[0], 0.8);
+  } else if (n > cloudColorConstraints[1]) {
+    return mix(color, cloudColors[1], 0.6);
+  }
+  return color;
+}
+
 float cnoise(vec4 P) 
 {
   vec4 Pi0 = floor(P); // Integer part for indexing
@@ -263,30 +291,3 @@ float cnoise(vec4 P)
   return 2.2 * n_xyzw;
 }
 
-vec3 applyLight(vec3 color, vec3 point, vec3 lightPos, vec3 viewerPos) {
-  vec3 norm = normalize(point);
-  vec3 toLightVector = normalize(lightPos-point);
-  float coef = max(0.0, dot(norm, toLightVector));
-
-  vec3 dirToViewer = normalize(viewerPos - point);
-  vec3 halfway = normalize(dirToViewer+toLightVector);
-  float spec = pow(max(dot(norm, halfway), 0.0), 32);
-  
-  vec3 ambient = color*0.1;
-  vec3 diffuse = coef*color;
-  //vec3 specular = color*spec;
-
-  return ambient + diffuse; //+ specular;
-}
-
-vec3 applyClouds(vec3 color, vec3 point, float time) {
-  float n = cnoise(vec4(point/cloudRadius*4, time));
-  n = 0.5 + 0.5*n;
-
-  if (n > cloudColorConstraints[0]) {
-    return mix(color, cloudColors[0], 0.8);
-  } else if (n > cloudColorConstraints[1]) {
-    return mix(color, cloudColors[1], 0.6);
-  }
-  return color;
-}
