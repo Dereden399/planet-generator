@@ -18,3 +18,4 @@ In this project, I continued exploring GLSL shaders, aiming to render a 3D objec
 
 ## Credits
 - Inspiration from [DaFluffyPotato's](https://www.youtube.com/@DaFluffyPotato) planet generator
+- GLSL textureless classic 4D noise "cnoise", with an RSL-style periodic variant "pnoise". Taken from [this repo](https://github.com/stegu/webgl-noise)
