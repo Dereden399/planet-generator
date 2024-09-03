@@ -15,15 +15,15 @@ class Planet:
     if len(planetColorConstraints) < 3:
       raise ValueError("PlanetColorConstraints must have 3 components")
     for c in planetColorConstraints:
-      if c < 0 or c > 1:
-        raise ValueError("PlanetColorConstraints must have values from 0 to 1")
+      if c < 0:
+        raise ValueError("PlanetColorConstraints must have positive values")
     if len(planetColors) != 12:
       raise ValueError("PlanetColors has to be a matrix 4x3")
     if len(cloudColorConstraints) < 2:
       raise ValueError("CloudColorConstraints must have 2 components")
     for c in cloudColorConstraints:
-      if c < 0 or c > 1:
-        raise ValueError("CloudColorConstraints must have values from 0 to 1")
+      if c < 0:
+        raise ValueError("CloudColorConstraints must have positive values")
     if len(cloudColors) != 6:
       raise ValueError("CloudColor has to be a matrix 2x3")
     

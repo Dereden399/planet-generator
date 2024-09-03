@@ -79,7 +79,7 @@ mat3 yRotation(float angle) {
 
 void main() {
   time;
-  vec3 lightPos = zRotation(3.141/9)*vec3(radius*10*cos(time*0.5), 0, radius*10*sin(time*0.5));
+  vec3 lightPos = zRotation(3.141/9)*vec3(radius*10*cos(time*0.2), 0, radius*10*sin(time*0.2));
   vec3 viewerPos = vec3(0, 0, radius*3);
 
   float planetAngle = time*rotationSpeed;
@@ -91,6 +91,7 @@ void main() {
   vec3 point = vec3(mix(vec2(0, 0), screenDimensions, pixelatedCoord / screenDimensions), 0);
   vec3 centeredPoint = point - screenCentre;
   vec4 color = vec4(0);
+  bool shouldApplyLight = false;
 
   // non pixelated
   vec4 backgroundColor = texture(backgroundTexture, TexCoord);
@@ -99,6 +100,7 @@ void main() {
   if (distanceFromCentre2 <= radius*radius) {
     float z = sqrt(radius*radius - distanceFromCentre2);
     centeredPoint.z = z;
+    shouldApplyLight = true;
 
     vec3 rotatedPoint = yRotation(planetAngle)*centeredPoint;
     float n = cnoise(vec4(rotatedPoint/(radius)*2, noiseSeed));
@@ -113,15 +115,18 @@ void main() {
       color.rgb = planetColors[3];
     }
   }
-  if (distanceFromCentre2 <= cloudRadius*cloudRadius) {
+  if (distanceFromCentre2 <= cloudRadius*cloudRadius && cloudSizeCoef >= 1) {
     float z = sqrt(cloudRadius*cloudRadius - distanceFromCentre2);
     centeredPoint.z = z;
+    shouldApplyLight = true;
     vec3 rotatedPoint = yRotation(planetAngle*cloudRotationSpeed)*centeredPoint;
     color.rgb = applyClouds(color.rgb, rotatedPoint, time*0.2);
     if (distanceFromCentre2 > radius*radius) {
       rotatedPoint = yRotation(planetAngle*cloudRotationSpeed)*vec3(centeredPoint.xy, -1*centeredPoint.z);
       color.rgb = applyClouds(color.rgb, rotatedPoint, time*0.2);
     }
+  }
+  if (shouldApplyLight) {
     color.rgb = applyLight(color.rgb, centeredPoint, lightPos, viewerPos);
   }
 
@@ -138,7 +143,7 @@ vec3 applyLight(vec3 color, vec3 point, vec3 lightPos, vec3 viewerPos) {
   vec3 halfway = normalize(dirToViewer+toLightVector);
   float spec = pow(max(dot(norm, halfway), 0.0), 32);
   
-  vec3 ambient = color*0.1;
+  vec3 ambient = color*0.15;
   vec3 diffuse = coef*color;
   //vec3 specular = color*spec;
 
